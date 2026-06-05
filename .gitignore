@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+sandbox.toml
+.server.pid
+downloaded_*.txt

@@ -1,0 +1,48 @@
+apiVersion: sandbox.opensandbox.io/v1alpha1
+kind: BatchSandbox
+metadata:
+  name: word-count
+  namespace: default
+spec:
+  # Pull 3 warm sandboxes from the pool
+  replicas: 3
+  poolRef: tutorial-pool
+
+  # Each sandbox gets a different word-count task via shardTaskPatches.
+  # taskTemplate is the default; shardTaskPatches[i] overrides per-replica.
+  taskTemplate:
+    spec:
+      process:
+        command: ["python3", "-c", "print('default shard')"]
+
+  shardTaskPatches:
+    - spec:
+        process:
+          command:
+            - python3
+            - -c
+            - |
+              import collections, string
+              words = open('/usr/share/dict/words').read().split() if __import__('os').path.exists('/usr/share/dict/words') else 'the quick brown fox jumps over the lazy dog'.split()
+              freq = collections.Counter(w.lower() for w in words[:1000])
+              print('shard-0 top-5:', freq.most_common(5))
+    - spec:
+        process:
+          command:
+            - python3
+            - -c
+            - |
+              import collections
+              words = 'the quick brown fox jumps over the lazy dog the fox'.split()
+              freq = collections.Counter(w for w in words if len(w) > 3)
+              print('shard-1 top-5 (len>3):', freq.most_common(5))
+    - spec:
+        process:
+          command:
+            - python3
+            - -c
+            - |
+              import collections, string
+              text = 'OpenSandbox runs sandboxes as containers on Kubernetes'
+              freq = collections.Counter(c.lower() for c in text if c in string.ascii_letters)
+              print('shard-2 letter-freq:', freq.most_common(5))

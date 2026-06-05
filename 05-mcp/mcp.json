@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "opensandbox": {
+      "command": "uv",
+      "args": [
+        "run",
+        "opensandbox-mcp",
+        "--domain", "localhost:8080",
+        "--protocol", "http"
+      ]
+    }
+  }
+}

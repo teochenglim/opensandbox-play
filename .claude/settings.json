@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash -n 00-setup/install.sh)",
+      "Bash(bash -n 00-setup/verify.sh)",
+      "Bash(bash -n tutorial.sh)",
+      "Bash(bash -n Makefile)",
+      "Bash(python3 -c ' *)",
+      "WebFetch(domain:open-sandbox.ai)",
+      "Bash(gh api *)",
+      "Bash(OPENSANDBOX_INSECURE_SERVER=YES uv run opensandbox-server)",
+      "Bash(docker info *)",
+      "Read(//var/run/**)",
+      "Bash(DOCKER_HOST=unix:///Users/chenglim.teo/.colima/default/docker.sock OPENSANDBOX_INSECURE_SERVER=YES uv run opensandbox-server)",
+      "Bash(docker context *)",
+      "Bash(DOCKER_HOST=unix:///Users/chenglim.teo/.colima/docker.sock OPENSANDBOX_INSECURE_SERVER=YES uv run opensandbox-server)",
+      "Bash(colima status *)",
+      "Bash(SANDBOX_DOMAIN=localhost:8080 uv run python 01-basics/main.py)",
+      "Bash(SANDBOX_DOMAIN=localhost:8080 uv run python 02-files/main.py)",
+      "Bash(SANDBOX_DOMAIN=localhost:8080 uv run python 03-run-python/main.py)",
+      "Bash(SANDBOX_DOMAIN=localhost:8080 uv run python 04-egress/main.py)",
+      "Bash(jobs -l)",
+      "Bash(python3 -c \"import mcp; print\\(mcp.__version__\\); from mcp import ClientSession; from mcp.client.stdio import stdio_client; from mcp import StdioServerParameters; print\\('imports OK'\\)\")",
+      "Bash(helm search *)",
+      "Bash(kubectl logs *)",
+      "Bash(echo \"exit: $?\")"
+    ]
+  }
+}
