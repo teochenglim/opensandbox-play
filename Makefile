@@ -1,16 +1,15 @@
-.PHONY: help setup serve serve-bg stop verify run-all clean run-01 run-02 run-03 run-04 run-05 run-06
+.PHONY: help start stop serve verify setup run-all clean run-01 run-02 run-03 run-04 run-05 run-06 clean-06
 
 help:
 	@echo "OpenSandbox Tutorial"
 	@echo ""
-	@echo "Setup:"
-	@echo "  make setup       install deps + generate sandbox.toml"
-	@echo ""
-	@echo "Server:"
-	@echo "  make serve       start server in foreground (Ctrl+C to stop)"
-	@echo "  make serve-bg    start server in background"
+	@echo "Quick start:"
+	@echo "  make start       install deps, start server in background, verify"
 	@echo "  make stop        stop background server"
-	@echo "  make verify      check all prerequisites"
+	@echo ""
+	@echo "Dev:"
+	@echo "  make serve       start server in foreground (Ctrl+C to stop)"
+	@echo "  make verify      re-run prerequisite checks"
 	@echo ""
 	@echo "Exercises:"
 	@echo "  make run-01      01-basics     — create sandbox, run commands, stream output"
@@ -29,27 +28,37 @@ OSB_SERVER_URL ?= http://localhost:8080
 OSB_DOMAIN     ?= localhost:8080
 DOCKER_HOST    := $(or $(DOCKER_HOST),unix://$(HOME)/.colima/default/docker.sock)
 
-setup:
-	@echo "==> Installing dependencies..."
-	uv sync
-	@echo "==> Generating server config (if not present)..."
-	@[ -f sandbox.toml ] || uv run opensandbox-server init-config sandbox.toml --example docker
-	@echo ""
-	@echo "Setup complete. Run 'make serve-bg' then 'make run-01'."
+start: setup
+	@echo "==> Starting OpenSandbox server in background..."
+	@DOCKER_HOST=$(DOCKER_HOST) OPENSANDBOX_INSECURE_SERVER=YES uv run opensandbox-server --config sandbox.toml &>/tmp/osb-server.log & echo $$! > .server.pid
+	@sleep 2 && curl -sf $(OSB_SERVER_URL)/health >/dev/null \
+	  && echo "Server up (PID=$$(cat .server.pid)). Logs: tail -f /tmp/osb-server.log" \
+	  || echo "Server may still be starting — check: tail -f /tmp/osb-server.log"
+	@$(MAKE) --no-print-directory verify
+
+stop:
+	@if [ -f .server.pid ]; then \
+	  kill $$(cat .server.pid) 2>/dev/null; rm -f .server.pid && echo "Server stopped."; \
+	else \
+	  pkill -f "opensandbox-server" 2>/dev/null && echo "Server stopped." || echo "No server running."; \
+	fi
 
 serve:
 	@echo "==> Starting OpenSandbox server on $(OSB_SERVER_URL)..."
 	DOCKER_HOST=$(DOCKER_HOST) OPENSANDBOX_INSECURE_SERVER=YES uv run opensandbox-server --config sandbox.toml
 
-serve-bg:
-	@echo "==> Starting OpenSandbox server in background..."
-	DOCKER_HOST=$(DOCKER_HOST) OPENSANDBOX_INSECURE_SERVER=YES uv run opensandbox-server --config sandbox.toml &>/tmp/osb-server.log & echo $$! > .server.pid
-	@sleep 2 && curl -sf $(OSB_SERVER_URL)/health >/dev/null && echo "Server up (PID=$$(cat .server.pid)). Logs: tail -f /tmp/osb-server.log" || echo "Server may still be starting — check: tail -f /tmp/osb-server.log"
+setup:
+	@echo "==> Installing dependencies..."
+	uv sync
+	@echo "==> Generating server config (if not present)..."
+	@[ -f sandbox.toml ] || uv run opensandbox-server init-config sandbox.toml --example docker
 
-stop:
-	@[ -f .server.pid ] && kill $$(cat .server.pid) && rm .server.pid && echo "Server stopped." || echo "No .server.pid found."
-
-verify:
+verify: setup
+	@curl -sf --max-time 2 $(OSB_SERVER_URL)/health >/dev/null 2>&1 || { \
+	  echo "==> Server not running, starting in background..."; \
+	  DOCKER_HOST=$(DOCKER_HOST) OPENSANDBOX_INSECURE_SERVER=YES uv run opensandbox-server --config sandbox.toml &>/tmp/osb-server.log & echo $$! > .server.pid; \
+	  sleep 2; \
+	}
 	OSB_SERVER_URL=$(OSB_SERVER_URL) bash 00-setup/verify.sh
 
 run-01:

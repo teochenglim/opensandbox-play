@@ -4,3 +4,4 @@ __pycache__/
 sandbox.toml
 .server.pid
 downloaded_*.txt
+.serena
