@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
     "opensandbox>=0.1.0",
+    "opensandbox-cli>=0.1.1",
     "opensandbox-mcp>=0.1.0",
     "rich>=13.0.0",
 ]
