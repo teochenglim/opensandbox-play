@@ -2,6 +2,6 @@
 __pycache__/
 *.pyc
 sandbox.toml
-.server.pid
 downloaded_*.txt
 .serena
+.claude/settings.json

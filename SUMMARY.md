@@ -10,7 +10,7 @@ Fully self-hosted sandbox runtime by Alibaba. Each sandbox is a Docker container
 your code  →  opensandbox SDK  →  opensandbox-server  →  Docker / K8s
 ```
 
-`opensandbox-server` is a **persistent service**, not a per-request process. In production you deploy it once (systemd, K8s deployment, etc.) and all SDK clients connect to it by domain. In this tutorial we run it with `make serve` just to keep setup minimal — but the SDK usage is identical either way.
+`opensandbox-server` is a **persistent service**, not a per-request process. In production you deploy it once (systemd, K8s deployment, etc.) and all SDK clients connect to it by domain. In this tutorial we run it as the `opensandbox/server` Docker image via `make serve` just to keep setup minimal — but the SDK usage is identical either way.
 
 ---
 
@@ -31,7 +31,7 @@ OpenSandbox gives you a managed API for all of these instead of shelling out to 
 
 | | Tutorial (`make serve`) | Production |
 |---|---|---|
-| Server | Local process, foreground | Persistent service (systemd / K8s deployment) |
+| Server | Docker container, foreground | Persistent service (systemd / K8s deployment) |
 | Auth | Disabled (`OPENSANDBOX_INSECURE_SERVER=YES`) | API key in `sandbox.toml` |
 | Docker backend | Colima on your laptop | Docker daemon on a VM or K8s node |
 | SDK config | `domain="localhost:8080"` | `domain="sandboxes.yourcompany.internal"` |

@@ -90,7 +90,7 @@ Docker isn't running, or (macOS/Colima) you're using the containerd backend. See
 `make serve` isn't running, or it's still starting up. Give it 3–5 seconds and try again.
 
 **Exercise fails with port-already-in-use**
-A previous sandbox container didn't clean up. Restart the server (`make stop && make serve-bg`) or wait a few seconds and retry.
+A previous sandbox container didn't clean up. Restart the server (`make stop && make start`) or wait a few seconds and retry.
 
 **`make run-06` — no kubectl or helm**
 Skip it. Exercises 01–05 don't need K8s at all.

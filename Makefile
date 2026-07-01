@@ -26,37 +26,60 @@ help:
 
 OSB_SERVER_URL ?= http://localhost:8080
 OSB_DOMAIN     ?= localhost:8080
-DOCKER_HOST    := $(or $(DOCKER_HOST),unix://$(HOME)/.colima/default/docker.sock)
+OSB_IMAGE      ?= opensandbox/server:latest
+OSB_CONTAINER  ?= opensandbox-server
+export DOCKER_HOST := $(or $(DOCKER_HOST),unix://$(HOME)/.colima/default/docker.sock)
+
+# opensandbox-server itself runs as a Docker container (not a host `uv run`
+# process) so it shares the same Docker daemon as the sandboxes it creates.
+# `sandbox.toml` sets [docker].host_ip so sandbox/egress endpoints are
+# reachable from the host. --network host is required here: the server also
+# uses host_ip for its *own* internal readiness probe against sidecar
+# containers (e.g. egress), which only resolves correctly if the server
+# shares the same network namespace as those sibling containers' published
+# ports (see 00-setup/sandbox.docker.toml for details).
+# _run-container is the one place that shells out to `docker run`; ARGS picks
+# background (-d) vs. foreground+auto-remove (--rm).
+ARGS ?= -d
+
+_run-container:
+	@docker rm -f $(OSB_CONTAINER) >/dev/null 2>&1 || true
+	docker run $(ARGS) --name $(OSB_CONTAINER) \
+	  --network host \
+	  -v /var/run/docker.sock:/var/run/docker.sock \
+	  -v $(CURDIR)/sandbox.toml:/etc/opensandbox/config.toml:ro \
+	  -e SANDBOX_CONFIG_PATH=/etc/opensandbox/config.toml \
+	  -e OPENSANDBOX_INSECURE_SERVER=YES \
+	  $(OSB_IMAGE)
 
 start: setup
-	@echo "==> Starting OpenSandbox server in background..."
-	@DOCKER_HOST=$(DOCKER_HOST) OPENSANDBOX_INSECURE_SERVER=YES uv run opensandbox-server --config sandbox.toml &>/tmp/osb-server.log & echo $$! > .server.pid
+	@echo "==> Starting OpenSandbox server (Docker container) in background..."
+	@$(MAKE) --no-print-directory _run-container ARGS=-d >/dev/null
 	@sleep 2 && curl -sf $(OSB_SERVER_URL)/health >/dev/null \
-	  && echo "Server up (PID=$$(cat .server.pid)). Logs: tail -f /tmp/osb-server.log" \
-	  || echo "Server may still be starting — check: tail -f /tmp/osb-server.log"
+	  && echo "Server up (container=$(OSB_CONTAINER)). Logs: docker logs -f $(OSB_CONTAINER)" \
+	  || echo "Server may still be starting — check: docker logs -f $(OSB_CONTAINER)"
 	@$(MAKE) --no-print-directory verify
 
 stop:
-	@if [ -f .server.pid ]; then \
-	  kill $$(cat .server.pid) 2>/dev/null; rm -f .server.pid && echo "Server stopped."; \
-	else \
-	  pkill -f "opensandbox-server" 2>/dev/null && echo "Server stopped." || echo "No server running."; \
-	fi
+	@docker rm -f $(OSB_CONTAINER) >/dev/null 2>&1 && echo "Server stopped." || echo "No server running."
+	@$(MAKE) --no-print-directory clean-06
 
 serve:
-	@echo "==> Starting OpenSandbox server on $(OSB_SERVER_URL)..."
-	DOCKER_HOST=$(DOCKER_HOST) OPENSANDBOX_INSECURE_SERVER=YES uv run opensandbox-server --config sandbox.toml
+	@echo "==> Starting OpenSandbox server (Docker container, foreground) on $(OSB_SERVER_URL)..."
+	$(MAKE) --no-print-directory _run-container ARGS=--rm
 
 setup:
 	@echo "==> Installing dependencies..."
 	uv sync
 	@echo "==> Generating server config (if not present)..."
-	@[ -f sandbox.toml ] || uv run opensandbox-server init-config sandbox.toml --example docker
+	@[ -f sandbox.toml ] || cp 00-setup/sandbox.docker.toml sandbox.toml
+	@echo "==> Pulling $(OSB_IMAGE) (if not present)..."
+	@docker image inspect $(OSB_IMAGE) >/dev/null 2>&1 || docker pull $(OSB_IMAGE)
 
 verify: setup
 	@curl -sf --max-time 2 $(OSB_SERVER_URL)/health >/dev/null 2>&1 || { \
 	  echo "==> Server not running, starting in background..."; \
-	  DOCKER_HOST=$(DOCKER_HOST) OPENSANDBOX_INSECURE_SERVER=YES uv run opensandbox-server --config sandbox.toml &>/tmp/osb-server.log & echo $$! > .server.pid; \
+	  $(MAKE) --no-print-directory _run-container ARGS=-d >/dev/null; \
 	  sleep 2; \
 	}
 	OSB_SERVER_URL=$(OSB_SERVER_URL) bash 00-setup/verify.sh
@@ -109,8 +132,22 @@ run-06:
 	@echo "    Pool pre-warmed pods — no cold-start wait. Run 'make clean-06' to tear down."
 
 clean-06:
-	kubectl delete batchsandbox word-count --ignore-not-found
-	kubectl delete pool tutorial-pool --ignore-not-found
+	@command -v kubectl >/dev/null 2>&1 || { echo "kubectl not found, skipping K8s cleanup."; exit 0; }
+	@kubectl delete batchsandbox word-count --ignore-not-found 2>/dev/null || true
+	@kubectl delete pool tutorial-pool --ignore-not-found 2>/dev/null || true
+	@if command -v helm >/dev/null 2>&1 && helm status opensandbox-controller -n opensandbox-system >/dev/null 2>&1; then \
+	  helm uninstall opensandbox-controller -n opensandbox-system >/dev/null 2>&1; \
+	  for i in $$(seq 1 15); do \
+	    helm status opensandbox-controller -n opensandbox-system >/dev/null 2>&1 || break; \
+	    sleep 1; \
+	  done; \
+	fi
+	@sleep 3
+	@command -v docker >/dev/null 2>&1 && { \
+	  leftover=$$(docker ps -aq --filter "name=tutorial-pool" --filter "name=opensandbox-controller"); \
+	  [ -n "$$leftover" ] && docker rm -f $$leftover >/dev/null 2>&1 && echo "Removed orphaned sandbox/controller containers." || true; \
+	} || true
+	@echo "K8s exercise resources cleaned up."
 
 run-all:
 	@echo ""

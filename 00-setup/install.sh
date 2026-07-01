@@ -37,14 +37,19 @@ echo "==> Generating local server config (sandbox.toml)..."
 if [[ -f sandbox.toml ]]; then
   echo "    sandbox.toml already exists — skipping."
 else
-  uv run opensandbox-server init-config sandbox.toml --example docker
+  cp 00-setup/sandbox.docker.toml sandbox.toml
   echo "    Config written to ./sandbox.toml"
 fi
+
+# ── Server image ──────────────────────────────────────────────────────────────
+echo ""
+echo "==> Pulling opensandbox/server:latest (if not present)..."
+docker image inspect opensandbox/server:latest &>/dev/null || docker pull opensandbox/server:latest
 
 echo ""
 echo "Setup complete!"
 echo ""
 echo "Next steps:"
-echo "  1. Terminal A: make serve          # start the local Docker sandbox server"
+echo "  1. Terminal A: make serve          # start the server (Docker container, foreground)"
 echo "  2. Terminal B: make verify         # confirm everything is up"
 echo "  3. Terminal B: make run-01         # run first exercise"

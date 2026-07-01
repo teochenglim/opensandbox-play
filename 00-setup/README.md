@@ -6,9 +6,9 @@ No coding here — just getting the local OpenSandbox server running.
 
 OpenSandbox is **fully self-hosted**. There is no cloud API key required.
 
-- `opensandbox-server` — FastAPI control plane, manages sandbox containers via Docker
+- `opensandbox/server` — FastAPI control plane image, runs as a Docker container, manages sandbox containers via the same Docker daemon
 - `opensandbox` SDK — Python client that talks to the local server over HTTP
-- Sandboxes are just Docker containers on your machine
+- Sandboxes are just Docker containers on your machine, siblings of the server container
 
 ## Steps
 
@@ -27,7 +27,13 @@ This: installs K8s CRDs (if kubectl+helm available) → syncs uv deps → genera
 ```bash
 make serve
 # or directly:
-OPENSANDBOX_INSECURE_SERVER=YES uv run opensandbox-server --config sandbox.toml
+docker run --rm --name opensandbox-server \
+  -p 8080:8080 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$(pwd)/sandbox.toml:/etc/opensandbox/config.toml:ro" \
+  -e SANDBOX_CONFIG_PATH=/etc/opensandbox/config.toml \
+  -e OPENSANDBOX_INSECURE_SERVER=YES \
+  opensandbox/server:latest
 ```
 
 Server starts at `http://localhost:8080`. Verify: `curl http://localhost:8080/health`
@@ -50,7 +56,7 @@ bash 00-setup/verify.sh
   [OK]  Python 3.11+
   [OK]  uv is available
   [OK]  opensandbox SDK installed
-  [OK]  opensandbox-server installed
+  [OK]  opensandbox/server image pulled
   [OK]  Server reachable at http://localhost:8080
 
 All checks passed. You're ready to go!
@@ -68,7 +74,7 @@ All checks passed. You're ready to go!
 
 ## Server config (`./sandbox.toml`)
 
-Generated locally by `make setup` and gitignored. The default Docker config works for all exercises. To inspect:
+Generated locally by `make setup` (copied from [`00-setup/sandbox.docker.toml`](sandbox.docker.toml)) and gitignored. The default config works for all exercises. To inspect:
 
 ```bash
 cat sandbox.toml

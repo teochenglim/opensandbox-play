@@ -26,7 +26,7 @@ check "kubectl is available"           "kubectl version --client"
 check "Python 3.11+"                   "python --version | grep -E '3\.(11|12|13)'"
 check "uv is available"                "uv --version"
 check "opensandbox SDK installed"      "uv run python -c 'import opensandbox'"
-check "opensandbox-server installed"   "uv run opensandbox-server --help"
+check "opensandbox/server image pulled" "docker image inspect opensandbox/server:latest"
 check "Server reachable at $SERVER_URL" "curl -sf --max-time 5 $SERVER_URL/health"
 
 echo ""

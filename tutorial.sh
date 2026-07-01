@@ -37,7 +37,7 @@ cat <<'DEMO'
 
 DEMO
 
-note "The server is a FastAPI process that spins sandboxes as Docker containers."
+note "The server itself runs as a Docker container (opensandbox/server) and spins sandboxes up as sibling containers."
 note "Swagger UI: http://localhost:8080/docs"
 pause
 

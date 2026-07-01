@@ -5,9 +5,9 @@ metadata:
   namespace: default
 spec:
   capacitySpec:
-    bufferMin: 2
-    bufferMax: 5
-    poolMin: 2
+    bufferMin: 1
+    bufferMax: 3
+    poolMin: 1
     poolMax: 10
   template:
     spec:
