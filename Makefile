@@ -1,14 +1,15 @@
-.PHONY: help start stop serve verify setup run-all clean run-01 run-02 run-03 run-04 run-05 run-06 clean-06
+.PHONY: help start stop serve verify setup check-server run-all clean run-01 run-02 run-03 run-04 run-05 run-06 clean-06
 
 help:
 	@echo "OpenSandbox Tutorial"
 	@echo ""
 	@echo "Quick start:"
-	@echo "  make start       install deps, start server in background, verify"
+	@echo "  make setup       install deps, generate sandbox.toml, pull server image"
+	@echo "  make start       setup + start server in background + verify"
+	@echo "  make serve       start server in foreground (Ctrl+C to stop)"
 	@echo "  make stop        stop background server"
 	@echo ""
 	@echo "Dev:"
-	@echo "  make serve       start server in foreground (Ctrl+C to stop)"
 	@echo "  make verify      re-run prerequisite checks"
 	@echo ""
 	@echo "Exercises:"
@@ -84,19 +85,31 @@ verify: setup
 	}
 	OSB_SERVER_URL=$(OSB_SERVER_URL) bash 00-setup/verify.sh
 
-run-01:
+# Guard for the exercises: fail fast with a pointer instead of a connection traceback.
+check-server:
+	@curl -sf --max-time 2 $(OSB_SERVER_URL)/health >/dev/null 2>&1 || { \
+	  echo ""; \
+	  echo "OpenSandbox server is not reachable at $(OSB_SERVER_URL)."; \
+	  echo "  make setup   first time only: install deps, config, pull image"; \
+	  echo "  make start   run the server in the background"; \
+	  echo "  make serve   or run it in the foreground (own terminal)"; \
+	  echo ""; \
+	  exit 1; \
+	}
+
+run-01: check-server
 	SANDBOX_DOMAIN=$(OSB_DOMAIN) uv run python 01-basics/main.py
 
-run-02:
+run-02: check-server
 	SANDBOX_DOMAIN=$(OSB_DOMAIN) uv run python 02-files/main.py
 
-run-03:
+run-03: check-server
 	SANDBOX_DOMAIN=$(OSB_DOMAIN) uv run python 03-run-python/main.py
 
-run-04:
+run-04: check-server
 	SANDBOX_DOMAIN=$(OSB_DOMAIN) uv run python 04-egress/main.py
 
-run-05:
+run-05: check-server
 	SANDBOX_DOMAIN=$(OSB_DOMAIN) uv run python 05-mcp/main.py
 
 run-06:
@@ -149,7 +162,7 @@ clean-06:
 	} || true
 	@echo "K8s exercise resources cleaned up."
 
-run-all:
+run-all: check-server
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "  01-basics     — create sandbox, run commands, stream"

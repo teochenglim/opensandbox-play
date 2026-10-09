@@ -10,16 +10,32 @@ from opensandbox.models.execd import ExecutionHandlers
 config = ConnectionConfig(
     domain=os.getenv("SANDBOX_DOMAIN", "localhost:8080"),
     api_key=os.getenv("SANDBOX_API_KEY"),
-    request_timeout=timedelta(seconds=60),
+    request_timeout=timedelta(minutes=5),
 )
 
 
-async def main() -> None:
-    sandbox = await Sandbox.create(
-        "python:3.12",
-        connection_config=config,
-        timeout=timedelta(minutes=10),
+async def create_with_progress() -> Sandbox:
+    """Create the sandbox, printing a heartbeat so a slow first run (image pulls) isn't silent."""
+    print("[sandbox] creating (first run pulls python:3.12 + execd images, may take 1-2 min)...", flush=True)
+    task = asyncio.create_task(
+        Sandbox.create(
+            "python:3.12",
+            connection_config=config,
+            timeout=timedelta(minutes=10),
+            ready_timeout=timedelta(minutes=5),  # default 30s is too short for a cold image pull
+        )
     )
+    elapsed = 0
+    while not task.done():
+        await asyncio.wait({task}, timeout=5)
+        elapsed += 5
+        if not task.done():
+            print(f"[sandbox] still creating... {elapsed}s", flush=True)
+    return task.result()
+
+
+async def main() -> None:
+    sandbox = await create_with_progress()
 
     async with sandbox:
         print(f"[sandbox] created: {sandbox.id}")
