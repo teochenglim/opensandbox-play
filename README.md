@@ -77,7 +77,7 @@ Each exercise prints what it's doing step by step. Read the corresponding `main.
 
 **05-mcp** — The exercise starts an MCP server (`opensandbox-mcp`) as a subprocess and calls it using the same MCP protocol Claude Code uses. You see the 19 tools it exposes, then watch a sandbox get created and a command run — all over MCP. The `.mcp.json` in this repo is auto-discovered by Claude Code: open this folder in Claude Code with `make serve` running and Claude can create sandboxes directly.
 
-**06-k8s** — Creates a `Pool` of pre-warmed K8s pods, then dispatches tasks into three of them via `kubectl exec`. The point: the pods are already running before you ask, so task dispatch is nearly instant. `BatchSandbox` is the CRD that manages bulk allocation from the pool.
+**06-k8s** — Creates a `Pool` of pre-warmed K8s pods, then dispatches tasks into two of them via `kubectl exec`. The point: the pods are already running before you ask, so task dispatch is nearly instant. `BatchSandbox` is the CRD that manages bulk allocation from the pool.
 
 ---
 

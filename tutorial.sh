@@ -188,11 +188,11 @@ note "Controller already installed if you ran make setup / install.sh."
 
 cat <<'DEMO'
 
-  # Pool — pre-warm 2–10 sandboxes
+  # Pool — pre-warm 2 sandboxes
   kubectl apply -f 06-k8s/sandbox-pool.yaml
   kubectl get pool tutorial-pool -w
 
-  # BatchSandbox — allocate 3 replicas, each runs a different word-count task
+  # BatchSandbox — allocate 2 replicas, each runs a different word-count task
   kubectl apply -f 06-k8s/batch-sandbox.yaml
   kubectl get batchsandbox word-count -w
 

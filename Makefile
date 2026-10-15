@@ -114,16 +114,20 @@ run-05: check-server
 
 run-06:
 	@echo "==> Checking K8s controller..."
-	@helm status opensandbox-controller -n opensandbox-system &>/dev/null 2>&1 || \
+	@helm status opensandbox -n opensandbox-system &>/dev/null 2>&1 || \
 	  (echo "Installing controller..." && \
-	   helm install opensandbox-controller \
-	     https://github.com/alibaba/OpenSandbox/releases/download/helm/opensandbox-controller/0.1.0/opensandbox-controller-0.1.0.tgz \
-	     --namespace opensandbox-system --create-namespace && \
+	   helm install opensandbox \
+	     https://github.com/opensandbox-group/OpenSandbox/releases/download/helm/opensandbox/0.2.2/opensandbox-0.2.2.tgz \
+	     --namespace opensandbox-system --create-namespace \
+	     --set opensandbox-server.server.replicaCount=0 && \
 	   kubectl rollout status deployment -n opensandbox-system --timeout=120s)
 	@echo "==> Creating Pool (warm standby sandboxes)..."
 	kubectl apply -f 06-k8s/sandbox-pool.yaml
 	@echo "==> Waiting for pool pods to be Ready (up to 60s)..."
-	@sleep 5
+	@for i in $$(seq 1 30); do \
+	  kubectl get pods -l sandbox.opensandbox.io/pool-name=tutorial-pool -o name 2>/dev/null | grep -q . && break; \
+	  sleep 1; \
+	done
 	kubectl wait pod -l sandbox.opensandbox.io/pool-name=tutorial-pool \
 	  --for=condition=Ready --timeout=60s
 	@echo ""
@@ -132,7 +136,7 @@ run-06:
 	@echo ""
 	@kubectl get pods -l sandbox.opensandbox.io/pool-name=tutorial-pool
 	@echo ""
-	@echo "==> Dispatching BatchSandbox (3 replicas from pool)..."
+	@echo "==> Dispatching BatchSandbox (2 replicas from pool)..."
 	kubectl apply -f 06-k8s/batch-sandbox.yaml
 	@sleep 3
 	@echo ""
@@ -148,10 +152,10 @@ clean-06:
 	@command -v kubectl >/dev/null 2>&1 || { echo "kubectl not found, skipping K8s cleanup."; exit 0; }
 	@kubectl delete batchsandbox word-count --ignore-not-found 2>/dev/null || true
 	@kubectl delete pool tutorial-pool --ignore-not-found 2>/dev/null || true
-	@if command -v helm >/dev/null 2>&1 && helm status opensandbox-controller -n opensandbox-system >/dev/null 2>&1; then \
-	  helm uninstall opensandbox-controller -n opensandbox-system >/dev/null 2>&1; \
+	@if command -v helm >/dev/null 2>&1 && helm status opensandbox -n opensandbox-system >/dev/null 2>&1; then \
+	  helm uninstall opensandbox -n opensandbox-system >/dev/null 2>&1; \
 	  for i in $$(seq 1 15); do \
-	    helm status opensandbox-controller -n opensandbox-system >/dev/null 2>&1 || break; \
+	    helm status opensandbox -n opensandbox-system >/dev/null 2>&1 || break; \
 	    sleep 1; \
 	  done; \
 	fi

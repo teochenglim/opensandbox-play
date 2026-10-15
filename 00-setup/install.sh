@@ -7,12 +7,13 @@ echo "==> Setting up OpenSandbox tutorial environment"
 if command -v kubectl &>/dev/null && command -v helm &>/dev/null; then
   echo ""
   echo "==> Installing OpenSandbox K8s controller + CRDs..."
-  if helm status opensandbox-controller -n opensandbox-system &>/dev/null 2>&1; then
+  if helm status opensandbox -n opensandbox-system &>/dev/null 2>&1; then
     echo "    Controller already installed — skipping."
   else
-    helm install opensandbox-controller \
-      https://github.com/alibaba/OpenSandbox/releases/download/helm/opensandbox-controller/0.1.0/opensandbox-controller-0.1.0.tgz \
-      --namespace opensandbox-system --create-namespace
+    helm install opensandbox \
+      https://github.com/opensandbox-group/OpenSandbox/releases/download/helm/opensandbox/0.2.2/opensandbox-0.2.2.tgz \
+      --namespace opensandbox-system --create-namespace \
+      --set opensandbox-server.server.replicaCount=0
     echo "    Waiting for controller to be ready..."
     kubectl rollout status deployment -n opensandbox-system --timeout=120s 2>/dev/null || true
   fi

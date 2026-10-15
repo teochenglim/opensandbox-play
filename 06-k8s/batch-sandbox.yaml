@@ -4,8 +4,8 @@ metadata:
   name: word-count
   namespace: default
 spec:
-  # Pull 3 warm sandboxes from the pool
-  replicas: 3
+  # Pull 2 warm sandboxes from the pool
+  replicas: 2
   poolRef: tutorial-pool
 
   # Each sandbox gets a different word-count task via shardTaskPatches.
@@ -36,13 +36,3 @@ spec:
               words = 'the quick brown fox jumps over the lazy dog the fox'.split()
               freq = collections.Counter(w for w in words if len(w) > 3)
               print('shard-1 top-5 (len>3):', freq.most_common(5))
-    - spec:
-        process:
-          command:
-            - python3
-            - -c
-            - |
-              import collections, string
-              text = 'OpenSandbox runs sandboxes as containers on Kubernetes'
-              freq = collections.Counter(c.lower() for c in text if c in string.ascii_letters)
-              print('shard-2 letter-freq:', freq.most_common(5))

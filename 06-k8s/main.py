@@ -26,14 +26,6 @@ SHARD_TASKS = [
         " print(f'cpus={os.cpu_count()}')"
         "\"",
     ),
-    (
-        "shard-2: hash digest",
-        "python3 -c \""
-        "import hashlib;"
-        " words = ['sandbox', 'opensandbox', 'brownbag', 'agent', 'isolated'];"
-        " [print(f'{w}: {hashlib.md5(w.encode()).hexdigest()[:8]}') for w in words]"
-        "\"",
-    ),
 ]
 
 

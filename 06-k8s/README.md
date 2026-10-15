@@ -1,6 +1,6 @@
 # 06-k8s — Pool + BatchSandbox
 
-Creates a `Pool` of pre-warmed K8s pods, then dispatches three tasks — one per pod — via `kubectl exec`. Requires `kubectl` and `helm`.
+Creates a `Pool` of pre-warmed K8s pods, then dispatches two tasks — one per pod — via `kubectl exec`. Requires `kubectl` and `helm`.
 
 ```bash
 make run-06
@@ -13,15 +13,14 @@ make run-06
 ==> Waiting for pool pods to be Ready...
 pod/tutorial-pool-abc condition met
 pod/tutorial-pool-def condition met
-pod/tutorial-pool-ghi condition met
 
 NAME            TOTAL   ALLOCATED   AVAILABLE
-tutorial-pool   3       0           3
+tutorial-pool   2       0           2
 
-==> Dispatching BatchSandbox (3 replicas from pool)...
+==> Dispatching BatchSandbox (2 replicas from pool)...
 
 ==> Running tasks in pool pods...
-    3 warm pod(s) available: tutorial-pool-abc, ...
+    2 warm pod(s) available: tutorial-pool-abc, tutorial-pool-def
 
 --- shard-0: word frequency  [tutorial-pool-abc] ---
     the: 3
@@ -33,12 +32,7 @@ tutorial-pool   3       0           3
     python=3.12.x
     cpus=8
 
---- shard-2: hash digest  [tutorial-pool-ghi] ---
-    sandbox: 93bc63e0
-    opensandbox: dee127c2
-    ...
-
-All 3 tasks completed in 0.4s
+All 2 tasks completed in 0.4s
 ```
 
 The pool pods were already running before you dispatched the tasks — that's the point. No cold-start wait regardless of how many replicas you ask for.
@@ -57,4 +51,4 @@ make clean-06
 
 ## If it's slow or pods don't come up
 
-Check available resources: `kubectl describe nodes`. The pool requests 250m CPU + 256Mi RAM per pod. Scale `bufferMin` down in `sandbox-pool.yaml` if the node is constrained.
+Check available resources: `kubectl describe nodes`. The pool requests 250m CPU + 256Mi RAM per pod. Scale the pool size (`bufferMin`/`poolMin`) down in `sandbox-pool.yaml` if the node is constrained.

@@ -5,10 +5,10 @@ metadata:
   namespace: default
 spec:
   capacitySpec:
-    bufferMin: 1
-    bufferMax: 3
-    poolMin: 1
-    poolMax: 10
+    bufferMin: 2
+    bufferMax: 2
+    poolMin: 2
+    poolMax: 2
   template:
     spec:
       containers:
